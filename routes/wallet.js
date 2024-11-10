@@ -1,25 +1,26 @@
 const express = require('express');
 const Wallet = require('../models/WalletModel');
 const authenticateFirebaseUser = require('../middleware/authMiddleware');
-const { route } = require('./user');
-const { findOneAndUpdate } = require('../models/UserModel');
 const router = express.Router();
 
 // Route to get wallet balance
 router.get('/', authenticateFirebaseUser, async (req, res) => {
     try {
         const wallet = await Wallet.findOne({ userId: req.user.uid });
-        if (!wallet) return res.status(404).send('Wallet not found');
+        if (!wallet) return res.status(404).json({ message: 'Wallet not found' });
         res.status(200).json(wallet);
     } catch (error) {
-        res.status(500).send('Server Error');
+        console.error(`Error in ${req.path}:`, error);
+        res.status(500).json({ message: 'Server Error' });
     }
 });
 
-
-//Route for Topup
+// Route for Top-up
 router.patch('/topup', authenticateFirebaseUser, async (req, res) => {
-    const amount  = req.body.amount;
+    const amount = parseFloat(req.body.amount);
+    if (isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ message: 'Amount must be a positive number' });
+    }
     try {
         const wallet = await Wallet.findOneAndUpdate(
             { userId: req.user.uid },
@@ -28,39 +29,39 @@ router.patch('/topup', authenticateFirebaseUser, async (req, res) => {
         );
 
         if (!wallet) {
-            return res.status(404).send('Wallet not found');
+            return res.status(404).json({ message: 'Wallet not found' });
         }
 
         res.status(200).json(wallet);
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Server Error');
+        console.error(`Error in ${req.path}:`, error);
+        res.status(500).json({ message: 'Server Error' });
     }
 });
 
-//Route for withdrawal
+// Route for Withdrawal
 router.patch('/withdraw', authenticateFirebaseUser, async (req, res) => {
-    const amount = req.body.amount;
+    const amount = parseFloat(req.body.amount);
+    if (isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ message: 'Amount must be a positive number' });
+    }
     try {
-        // Check wallet balance
         const wallet = await Wallet.findOne({ userId: req.user.uid });
         
         if (!wallet) {
-            return res.status(404).send('Wallet not found');
+            return res.status(404).json({ message: 'Wallet not found' });
         }
 
-        // Check for sufficient balance
         if (wallet.balance < amount) {
-            return res.status(400).send('Insufficient balance');
+            return res.status(400).json({ message: 'Insufficient balance' });
         }
 
-        // Proceed with the withdrawal
         wallet.balance -= amount;
         await wallet.save();
         res.status(200).json(wallet);
     } catch (error) {
-        console.error(error);
-        res.status(500).send('Server Error');
+        console.error(`Error in ${req.path}:`, error);
+        res.status(500).json({ message: 'Server Error' });
     }
 });
 
