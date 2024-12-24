@@ -1,38 +1,55 @@
-// routes/userRoutes.js
 const express = require('express');
 const User = require('../models/UserModel');
 const Wallet = require('../models/WalletModel');
 const authenticateFirebaseUser = require('../middleware/authMiddleware');
 const router = express.Router();
 
-// Route to handle user login
+/**
+ * 🟢 Route to handle user login
+ * URL: /api/user/login
+ * Method: POST
+ * Body: { email, displayName, isMerchant }
+ * Headers: { Authorization: Bearer <Firebase ID Token> }
+ */
 router.post('/login', authenticateFirebaseUser, async (req, res) => {
     const { uid } = req.user;
     const { email, displayName, isMerchant } = req.body;
+
     try {
         let user = await User.findOne({ uid });
+        
         if (user) {
-            // Check if the existing user's type (isMerchant) matches the app's intended type
             if (user.isMerchant !== isMerchant) {
                 return res.status(403).json({
-                    message: `Account already exists as ${user.isMerchant ? 'Merchant' : 'User'}. Please use the correct app to log in.`
+                    success: false, 
+                    message: `Account already exists as a ${user.isMerchant ? 'Merchant' : 'User'}. Please use the correct app to log in.`
                 });
             }
         } else {
-            // If the user does not exist, create a new user and wallet
             user = await User.create({ uid, email, displayName, isMerchant });
-            await Wallet.create({ userId: uid, userName: displayName,isMerchant });
+            await Wallet.create({ userId: uid, userName: displayName, isMerchant });
         }
-        res.status(200).json({ success: true, user });
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Login successful'
+        });
     } catch (error) {
         console.error('Error in /login:', error);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 });
 
-// Route to attach phone number
+/**
+ * 🟢 Route to attach phone number
+ * URL: /api/user/attach-phone
+ * Method: PATCH
+ * Body: { phoneNumber }
+ * Headers: { Authorization: Bearer <Firebase ID Token> }
+ */
 router.patch('/attach-phone', authenticateFirebaseUser, async (req, res) => {
     const { phoneNumber } = req.body;
+
     try {
         const existingUser = await User.findOne({ phoneNumber });
         if (existingUser) {
@@ -46,16 +63,28 @@ router.patch('/attach-phone', authenticateFirebaseUser, async (req, res) => {
         );
 
         if (!user) return res.status(404).json({ message: 'User not found' });
-        res.status(200).json({ success: true, user });
+
+        res.status(200).json({ 
+            success: true, 
+            message: 'Phone number attached successfully', 
+            user 
+        });
     } catch (error) {
         console.error('Error in /attach-phone:', error);
         res.status(500).json({ message: 'Server Error' });
     }
 });
 
-// Route to attach ID card UID
+/**
+ * 🟢 Route to attach ID card UID
+ * URL: /api/user/attach-id
+ * Method: PATCH
+ * Body: { idCardUID }
+ * Headers: { Authorization: Bearer <Firebase ID Token> }
+ */
 router.patch('/attach-id', authenticateFirebaseUser, async (req, res) => {
     const { idCardUID } = req.body;
+
     try {
         const existingUser = await User.findOne({ idCardUID });
         if (existingUser) {
@@ -70,7 +99,6 @@ router.patch('/attach-id', authenticateFirebaseUser, async (req, res) => {
 
         if (!user) return res.status(404).json({ message: 'User not found' });
 
-        // Update the wallet with card UID
         const wallet = await Wallet.findOneAndUpdate(
             { userId: req.user.uid },
             { cardUID: idCardUID },
@@ -79,7 +107,12 @@ router.patch('/attach-id', authenticateFirebaseUser, async (req, res) => {
 
         if (!wallet) return res.status(404).json({ message: 'Wallet not found' });
 
-        res.status(200).json({ success: true, user, wallet });
+        res.status(200).json({ 
+            success: true, 
+            message: 'ID Card attached successfully', 
+            user, 
+            wallet 
+        });
     } catch (error) {
         console.error('Error in /attach-id:', error);
         res.status(500).json({ message: 'Server Error' });
