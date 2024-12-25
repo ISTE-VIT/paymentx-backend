@@ -6,7 +6,9 @@ const userSchema = new mongoose.Schema({
     displayName: { type: String, required: true },
     isMerchant: {type: Boolean,required:true},
     phoneNumber: { type: String, default: null },
-    idCardUID: { type: String, default: null }
+    idCardUID: { type: String, default: null },
+    pin:{type: String,default: null}
+    
 });
 
 module.exports = mongoose.model('User', userSchema,'users');
