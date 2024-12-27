@@ -19,7 +19,7 @@ router.get('/', authenticateFirebaseUser, async (req, res) => {
 router.patch('/topup', authenticateFirebaseUser, async (req, res) => {
     const amount = parseFloat(req.body.amount);
     if (isNaN(amount) || amount <= 0) {
-        return res.status(400).json({ message: 'Amount must be a positive number' });
+        return res.status(400).json({ success:false, message: 'Amount must be a positive number' });
     }
     try {
         const wallet = await Wallet.findOneAndUpdate(
@@ -29,13 +29,13 @@ router.patch('/topup', authenticateFirebaseUser, async (req, res) => {
         );
 
         if (!wallet) {
-            return res.status(404).json({ message: 'Wallet not found' });
+            return res.status(404).json({ success:false, message: 'Wallet not found' });
         }
 
-        res.status(200).json(wallet);
+        res.status(200).json({ success:true, message: 'Topup Done'});
     } catch (error) {
         console.error(`Error in ${req.path}:`, error);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({success:false, message: 'Server Error' });
     }
 });
 
@@ -43,25 +43,25 @@ router.patch('/topup', authenticateFirebaseUser, async (req, res) => {
 router.patch('/withdraw', authenticateFirebaseUser, async (req, res) => {
     const amount = parseFloat(req.body.amount);
     if (isNaN(amount) || amount <= 0) {
-        return res.status(400).json({ message: 'Amount must be a positive number' });
+        return res.status(400).json({ success:false, message: 'Amount must be a positive number' });
     }
     try {
         const wallet = await Wallet.findOne({ userId: req.user.uid });
         
         if (!wallet) {
-            return res.status(404).json({ message: 'Wallet not found' });
+            return res.status(404).json({ success:false, message: 'Wallet not found' });
         }
 
         if (wallet.balance < amount) {
-            return res.status(400).json({ message: 'Insufficient balance' });
+            return res.status(400).json({ success: false, message: 'Insufficient balance' });
         }
 
         wallet.balance -= amount;
         await wallet.save();
-        res.status(200).json(wallet);
+        res.status(200).json({ success:true, message: 'Withdrawal Done'});
     } catch (error) {
         console.error(`Error in ${req.path}:`, error);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ success:false, message: 'Server Error' });
     }
 });
 
