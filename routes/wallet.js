@@ -7,11 +7,11 @@ const router = express.Router();
 router.get('/', authenticateFirebaseUser, async (req, res) => {
     try {
         const wallet = await Wallet.findOne({ userId: req.user.uid });
-        if (!wallet) return res.status(404).json({ message: 'Wallet not found' });
-        res.status(200).json(wallet);
+        if (!wallet) return res.status(404).json({ success: false, message: 'Wallet not found'});
+        res.status(200).json({success:true, message:"wallet fetched", wallet: wallet});
     } catch (error) {
         console.error(`Error in ${req.path}:`, error);
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ success: false, message: 'Server Error' });
     }
 });
 
