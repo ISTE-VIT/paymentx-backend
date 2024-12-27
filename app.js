@@ -16,7 +16,7 @@ app.use(express.urlencoded({extended:false}));
 
 
 app.get('/',async (req,res)=>{
-    res.status(200).json({PaymentX_Backend_Status : "Working"});
+    res.status(200).json({sucess:true, message : "Working"});
 })
 
 app.use('/api/users', userRoutes);

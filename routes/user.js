@@ -138,4 +138,31 @@ router.patch('/create-pin',authenticateFirebaseUser,async (req,res)=>{
     }
 });
 
+router.get('/check-user', authenticateFirebaseUser, async (req, res) => {
+    const { uid } = req.user;
+    try {
+        let user = await User.findOne({ uid });
+        if (user) {
+            return res.status(200).json({
+                success: true,
+                message: 'User found',
+                user,
+            });
+        } else {
+            res.status(404).json({
+                success: false, 
+                message: 'User Not Found'
+            })
+        }
+    } catch (error) {
+        console.error('Error in /check-user:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server Error' 
+        });
+    }
+});
+
+
+
 module.exports = router;
