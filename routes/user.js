@@ -164,5 +164,38 @@ router.get('/check-user', authenticateFirebaseUser, async (req, res) => {
 });
 
 
+router.post('/verify-pin',authenticateFirebaseUser,async (req,res)=>{
+    const { pin } = req.body;
+    try {
+        let user = await User.findOne({ uid: req.user.uid });
+        if (user) {
+            if(pin===user.pin){
+                return res.status(200).json({
+                    success: true,
+                    message: 'Correct Pin'
+                });
+            }
+            else{
+                return res.status(401).json({
+                    success: false,
+                    message: 'Incorrect Pin'
+                });
+            }
+        } else {
+            res.status(404).json({
+                success: false, 
+                message: 'User Not Found'
+            })
+        }
+    } catch (error) {
+        console.error('Error in /check-user:', error);
+        res.status(500).json({ 
+            success: false, 
+            message: 'Server Error' 
+        });
+    }
+});
+
+
 
 module.exports = router;

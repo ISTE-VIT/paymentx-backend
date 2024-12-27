@@ -1,26 +1,17 @@
 const express = require('express');
 const Wallet = require('../models/WalletModel');
-const User = require('../models/UserModel');
 const authenticateFirebaseUser = require('../middleware/authMiddleware');
 const router = express.Router();
 
-// Route to get wallet balance
-router.post('/', authenticateFirebaseUser, async (req, res) => {
-    const {pin} = req.body;
+// Route to get wallet
+router.get('/', authenticateFirebaseUser, async (req, res) => {
     try {
         const wallet = await Wallet.findOne({ userId: req.user.uid });
-        if (!wallet) return res.status(404).json({success:false, message: 'Wallet not found' });
-        const user = await User.findOne({ uid: req.user.uid });
-        if (!user) return res.status(404).json({success:false, message: 'User not found' });
-
-        if(pin===user.pin){
-            res.status(200).json({success:true,message: "successfully fetched", wallet});
-        }else{
-            res.status(401).json({success:false,message: "wrong pin"})
-        }
+        if (!wallet) return res.status(404).json({ message: 'Wallet not found' });
+        res.status(200).json(wallet);
     } catch (error) {
         console.error(`Error in ${req.path}:`, error);
-        res.status(500).json({ success: false, message: 'Server Error' });
+        res.status(500).json({ message: 'Server Error' });
     }
 });
 
