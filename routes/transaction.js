@@ -2,13 +2,14 @@ const express = require('express');
 const router = express.Router();
 const Transaction = require('../models/TransactionModel');
 const Wallet = require('../models/WalletModel');
+const User = require('../models/UserModel');
 const mongoose = require('mongoose');
 const authenticateFirebaseUser = require('../middleware/authMiddleware');
 const { messaging } = require('firebase-admin');
 
 // Route to initiate a transaction via NFC tap (requires idCardUID)
 router.post('/initiate', authenticateFirebaseUser, async (req, res) => {
-    const { idCardUID, amount } = req.body;
+    const { idCardUID, amount, pin } = req.body;
     const merchantId = req.user.uid;
 
     // Ensure a positive amount
@@ -17,8 +18,8 @@ router.post('/initiate', authenticateFirebaseUser, async (req, res) => {
         return res.status(400).json({ success: false, message: 'Amount must be a positive number' });
     }
 
+    const session = await mongoose.startSession();
     try {
-        const session = await mongoose.startSession();
         session.startTransaction();
 
         // Find user by ID card UID
@@ -31,6 +32,14 @@ router.post('/initiate', authenticateFirebaseUser, async (req, res) => {
         if (!merchantWallet) {
             return res.status(404).json({ success: false, message: "Merchant not found" });
         }
+
+        const user = await User.findOne({ idCardUID: idCardUID });
+                if (!user) {
+                    return res.status(404).json({ success: false, message: 'User not found' });
+                }
+                if (pin !== user.pin) {
+                    return res.status(401).json({ success: false, message: 'Incorrect Pin' });
+                }
 
         if (userWallet.balance < parsedAmount) {
             return res.status(400).json({ success: false, message: "Insufficient Balance" });
@@ -55,12 +64,17 @@ router.post('/initiate', authenticateFirebaseUser, async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
-        res.status(200).json({ success: true, message: "Transaction Done"});
+        res.status(200).json({ success: true, message: "Transaction Done" });
     } catch (error) {
+        if (session.inTransaction()) {
+            await session.abortTransaction();
+        }
+        session.endSession();
         console.error('Error initiating transaction:', error);
         res.status(500).json({ success: false, message: 'Server Error' });
     }
 });
+
 
 
 
