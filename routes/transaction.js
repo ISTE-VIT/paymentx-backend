@@ -4,6 +4,7 @@ const Transaction = require('../models/TransactionModel');
 const Wallet = require('../models/WalletModel');
 const mongoose = require('mongoose');
 const authenticateFirebaseUser = require('../middleware/authMiddleware');
+const { messaging } = require('firebase-admin');
 
 // Route to initiate a transaction via NFC tap (requires idCardUID)
 router.post('/initiate', authenticateFirebaseUser, async (req, res) => {
@@ -54,7 +55,7 @@ router.post('/initiate', authenticateFirebaseUser, async (req, res) => {
         await session.commitTransaction();
         session.endSession();
 
-        res.status(200).json({ success: true, transaction });
+        res.status(200).json({ success: true, message: "Transaction Done"});
     } catch (error) {
         console.error('Error initiating transaction:', error);
         res.status(500).json({ success: false, message: 'Server Error' });
